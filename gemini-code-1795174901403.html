@@ -1,0 +1,2659 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>PCの守護神 - Guardian of the PC</title>
+  <style>
+    :root {
+      --bg-dark: #0b0f19;
+      --panel-bg: rgba(17, 24, 39, 0.92);
+      --border-glow: rgba(56, 189, 248, 0.35);
+      --accent-blue: #38bdf8;
+      --accent-green: #22c55e;
+      --accent-yellow: #eab308;
+      --accent-red: #ef4444;
+      --accent-purple: #a855f7;
+      --text-main: #f1f5f9;
+      --text-muted: #94a3b8;
+      --font-sans: "Hiragino Kaku Gothic ProN", "Meiryo", "Yu Gothic", system-ui, -apple-system, sans-serif;
+      --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    }
+
+    * {
+      box-sizing: border-box;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+
+    html, body {
+      margin: 0;
+      padding: 0;
+      width: 100%;
+      height: 100%;
+      background-color: var(--bg-dark);
+      color: var(--text-main);
+      font-family: var(--font-sans);
+      overflow: hidden;
+    }
+
+    /* ================= START & GAMEOVER OVERLAYS ================= */
+    .overlay-screen {
+      position: fixed;
+      inset: 0;
+      z-index: 1000;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      background: radial-gradient(circle at 50% 30%, #1e293b 0%, #090d16 100%);
+      padding: 20px;
+      text-align: center;
+      transition: opacity 0.4s ease, visibility 0.4s ease;
+    }
+
+    .overlay-screen.hidden {
+      opacity: 0;
+      visibility: hidden;
+      pointer-events: none;
+    }
+
+    .title-badge {
+      background: rgba(56, 189, 248, 0.15);
+      border: 1px solid var(--accent-blue);
+      color: var(--accent-blue);
+      padding: 4px 14px;
+      border-radius: 999px;
+      font-size: 0.85rem;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      margin-bottom: 12px;
+    }
+
+    .game-title {
+      font-size: clamp(2.2rem, 5vw, 3.8rem);
+      font-weight: 900;
+      margin: 0 0 10px;
+      background: linear-gradient(135deg, #ffffff 20%, #38bdf8 60%, #818cf8 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      text-shadow: 0 10px 30px rgba(56, 189, 248, 0.25);
+    }
+
+    .game-subtitle {
+      color: var(--text-muted);
+      max-width: 640px;
+      font-size: 0.98rem;
+      line-height: 1.6;
+      margin-bottom: 24px;
+    }
+
+    .spec-selector {
+      display: flex;
+      gap: 12px;
+      margin-bottom: 24px;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+
+    .spec-card {
+      background: rgba(30, 41, 59, 0.8);
+      border: 2px solid rgba(148, 163, 184, 0.25);
+      border-radius: 12px;
+      padding: 12px 18px;
+      cursor: pointer;
+      width: 195px;
+      text-align: left;
+      transition: all 0.2s ease;
+    }
+
+    .spec-card:hover {
+      border-color: var(--accent-blue);
+      transform: translateY(-2px);
+    }
+
+    .spec-card.selected {
+      border-color: var(--accent-blue);
+      background: rgba(56, 189, 248, 0.15);
+      box-shadow: 0 0 20px rgba(56, 189, 248, 0.25);
+    }
+
+    .spec-card h4 {
+      margin: 0 0 4px;
+      font-size: 1rem;
+      color: #fff;
+    }
+
+    .spec-card p {
+      margin: 0;
+      font-size: 0.78rem;
+      color: var(--text-muted);
+      line-height: 1.4;
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, #0284c7, #2563eb);
+      color: #fff;
+      border: none;
+      border-radius: 12px;
+      padding: 14px 40px;
+      font-size: 1.15rem;
+      font-weight: 800;
+      cursor: pointer;
+      box-shadow: 0 8px 25px rgba(37, 99, 235, 0.45);
+      transition: transform 0.15s ease, box-shadow 0.15s ease;
+    }
+
+    .btn-primary:hover {
+      transform: translateY(-2px) scale(1.02);
+      box-shadow: 0 12px 30px rgba(56, 189, 248, 0.55);
+    }
+
+    .btn-primary:active {
+      transform: translateY(1px);
+    }
+
+    .manual-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 8px;
+      max-width: 960px;
+      width: 100%;
+      margin-top: 24px;
+      max-height: 32vh;
+      overflow-y: auto;
+      padding: 12px;
+      background: rgba(15, 23, 42, 0.75);
+      border: 1px solid rgba(148, 163, 184, 0.2);
+      border-radius: 12px;
+      text-align: left;
+    }
+
+    .manual-item {
+      font-size: 0.76rem;
+      background: rgba(30, 41, 59, 0.65);
+      padding: 6px 10px;
+      border-radius: 8px;
+      border-left: 3px solid var(--accent-blue);
+    }
+
+    .manual-item strong {
+      display: block;
+      color: #e2e8f0;
+      margin-bottom: 2px;
+    }
+
+    .manual-item span {
+      color: #94a3b8;
+    }
+
+    /* ================= MAIN GAME LAYOUT ================= */
+    #game-container {
+      display: flex;
+      flex-direction: column;
+      width: 100%;
+      height: 100%;
+      position: relative;
+    }
+
+    /* TOP HUD */
+    #top-hud {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      padding: 8px 14px;
+      background: var(--panel-bg);
+      border-bottom: 1px solid rgba(148, 163, 184, 0.2);
+      z-index: 50;
+      flex-wrap: wrap;
+    }
+
+    .hud-group {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .hud-pill {
+      background: rgba(30, 41, 59, 0.9);
+      border: 1px solid rgba(148, 163, 184, 0.25);
+      border-radius: 8px;
+      padding: 5px 12px;
+      font-size: 0.85rem;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .hud-pill .val {
+      font-family: var(--font-mono);
+      color: var(--accent-blue);
+      font-size: 0.95rem;
+    }
+
+    .hud-btn {
+      background: rgba(51, 65, 85, 0.9);
+      color: #fff;
+      border: 1px solid rgba(148, 163, 184, 0.35);
+      border-radius: 8px;
+      padding: 6px 12px;
+      font-size: 0.82rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+
+    .hud-btn:hover {
+      background: rgba(71, 85, 105, 1);
+      border-color: var(--accent-blue);
+    }
+
+    .hud-btn.active {
+      background: #0284c7;
+      border-color: #38bdf8;
+    }
+
+    /* OVERALL DURABILITY BAR */
+    .overall-hp-wrap {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      min-width: 210px;
+    }
+
+    .bar-track {
+      flex: 1;
+      height: 12px;
+      background: #1e293b;
+      border-radius: 999px;
+      overflow: hidden;
+      border: 1px solid rgba(255,255,255,0.12);
+    }
+
+    .bar-fill {
+      height: 100%;
+      width: 100%;
+      background: linear-gradient(90deg, #22c55e, #4ade80);
+      transition: width 0.2s ease, background 0.2s ease;
+    }
+
+    /* ACTIVE ALERTS BANNER */
+    #alert-ticker {
+      position: absolute;
+      top: 54px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 60;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      width: min(92vw, 760px);
+      pointer-events: none;
+    }
+
+    .alert-card {
+      pointer-events: auto;
+      background: rgba(127, 29, 29, 0.92);
+      border: 2px solid #f87171;
+      border-radius: 10px;
+      padding: 8px 14px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      box-shadow: 0 8px 24px rgba(239, 68, 68, 0.4);
+      animation: pulseAlert 0.9s infinite alternate;
+    }
+
+    .alert-card.info {
+      background: rgba(30, 58, 138, 0.92);
+      border-color: #60a5fa;
+      box-shadow: 0 8px 24px rgba(59, 130, 246, 0.35);
+      animation: none;
+    }
+
+    @keyframes pulseAlert {
+      from { transform: scale(1); box-shadow: 0 4px 16px rgba(239, 68, 68, 0.35); }
+      to { transform: scale(1.012); box-shadow: 0 8px 28px rgba(239, 68, 68, 0.7); }
+    }
+
+    .alert-title {
+      font-weight: 800;
+      font-size: 0.92rem;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .alert-hint {
+      font-size: 0.8rem;
+      color: #fecaca;
+    }
+
+    .alert-timer {
+      font-family: var(--font-mono);
+      font-weight: 800;
+      font-size: 0.95rem;
+      background: rgba(0, 0, 0, 0.45);
+      padding: 3px 8px;
+      border-radius: 6px;
+      white-space: nowrap;
+    }
+
+    .mash-btn {
+      background: #facc15;
+      color: #0f172a;
+      border: none;
+      border-radius: 6px;
+      padding: 5px 10px;
+      font-weight: 900;
+      font-size: 0.8rem;
+      cursor: pointer;
+    }
+
+    .mash-btn:active {
+      transform: scale(0.94);
+    }
+
+    /* ================= DESK STAGE (FRONT PERSPECTIVE) ================= */
+    #stage-viewport {
+      flex: 1;
+      position: relative;
+      overflow: hidden;
+      background: linear-gradient(180deg, #162033 0%, #1e293b 58%, #0f172a 58%, #090d16 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    /* Smooth zoom camera wrapper */
+    #camera-rig {
+      position: relative;
+      width: 100%;
+      height: 100%;
+      transform-origin: 41% 45%;
+      transition: transform 0.65s cubic-bezier(0.22, 1, 0.36, 1);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    #camera-rig.zoomed-monitor {
+      transform: scale(2.45) translate(8.5%, 4.5%);
+    }
+
+    /* Exit Zoom Floating Button */
+    #exit-zoom-btn {
+      position: absolute;
+      top: 12px;
+      right: 16px;
+      z-index: 80;
+      background: rgba(15, 23, 42, 0.92);
+      color: #38bdf8;
+      border: 2px solid #38bdf8;
+      border-radius: 10px;
+      padding: 8px 16px;
+      font-weight: 800;
+      font-size: 0.88rem;
+      cursor: pointer;
+      display: none;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.6);
+    }
+
+    #exit-zoom-btn.visible {
+      display: block;
+    }
+
+    /* Room Window & Background Details */
+    .room-window {
+      position: absolute;
+      top: 6%;
+      left: 8%;
+      width: 19%;
+      height: 34%;
+      background: linear-gradient(180deg, #0c192c 0%, #1e3a5f 100%);
+      border: 6px solid #334155;
+      border-radius: 6px;
+      box-shadow: inset 0 0 25px rgba(56, 189, 248, 0.15);
+      overflow: hidden;
+    }
+
+    .room-window::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background:
+        linear-gradient(90deg, transparent 48%, #334155 48%, #334155 52%, transparent 52%),
+        linear-gradient(0deg, transparent 48%, #334155 48%, #334155 52%, transparent 52%);
+    }
+
+    .window-moon {
+      position: absolute;
+      top: 16%;
+      right: 20%;
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      background: #fef08a;
+      box-shadow: 0 0 15px #fef08a;
+    }
+
+    /* Desk Surface */
+    .desk-top {
+      position: absolute;
+      bottom: 14%;
+      left: 6%;
+      right: 6%;
+      height: 16%;
+      background: linear-gradient(180deg, #5c3a21 0%, #3e2716 100%);
+      border-top: 4px solid #784b2a;
+      border-radius: 6px;
+      box-shadow: 0 18px 40px rgba(0, 0, 0, 0.75);
+    }
+
+    .desk-leg-left, .desk-leg-right {
+      position: absolute;
+      bottom: 0;
+      width: 3.2%;
+      height: 14%;
+      background: #1e293b;
+    }
+    .desk-leg-left { left: 9%; }
+    .desk-leg-right { right: 9%; }
+
+    /* ================= MONITOR ASSEMBLY ================= */
+    #monitor-assembly {
+      position: absolute;
+      bottom: 29.5%;
+      left: 24%;
+      width: 34%;
+      aspect-ratio: 16 / 10.2;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      cursor: pointer;
+      z-index: 15;
+    }
+
+    #monitor-assembly:hover .monitor-bezel {
+      box-shadow: 0 0 0 2px #38bdf8, 0 12px 30px rgba(0, 0, 0, 0.7);
+    }
+
+    .monitor-bezel {
+      width: 100%;
+      height: 86%;
+      background: #0f172a;
+      border: 6px solid #1e293b;
+      border-radius: 10px;
+      position: relative;
+      overflow: hidden;
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.65);
+      transition: box-shadow 0.2s;
+    }
+
+    .monitor-stand-neck {
+      width: 12%;
+      height: 10%;
+      background: linear-gradient(90deg, #334155, #64748b, #334155);
+    }
+
+    .monitor-stand-base {
+      width: 34%;
+      height: 4%;
+      background: #475569;
+      border-radius: 4px 4px 0 0;
+    }
+
+    /* MONITOR OS SCREEN */
+    #monitor-screen {
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(135deg, #0ea5e9 0%, #1d4ed8 55%, #312e81 100%);
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      overflow: hidden;
+      font-size: 10px;
+      color: #fff;
+    }
+
+    /* Desktop Icons */
+    .os-desktop {
+      flex: 1;
+      padding: 6px;
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 4px;
+      align-content: start;
+      position: relative;
+    }
+
+    .os-icon {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 4px 2px;
+      border-radius: 4px;
+      cursor: pointer;
+      text-align: center;
+      background: rgba(15, 23, 42, 0.25);
+      transition: background 0.15s;
+    }
+
+    .os-icon:hover {
+      background: rgba(255, 255, 255, 0.22);
+    }
+
+    .os-icon-emoji {
+      font-size: 14px;
+      line-height: 1.1;
+    }
+
+    .os-icon-label {
+      font-size: 6.5px;
+      font-weight: 700;
+      margin-top: 2px;
+      line-height: 1.1;
+      text-shadow: 0 1px 2px rgba(0,0,0,0.8);
+    }
+
+    /* OS App Window */
+    #os-window {
+      position: absolute;
+      inset: 6px 6px 20px 6px;
+      background: #0f172a;
+      border: 1px solid #38bdf8;
+      border-radius: 5px;
+      display: none;
+      flex-direction: column;
+      z-index: 10;
+      box-shadow: 0 6px 18px rgba(0, 0, 0, 0.75);
+    }
+
+    #os-window.open {
+      display: flex;
+    }
+
+    .os-win-header {
+      background: #1e293b;
+      padding: 3px 6px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 1px solid #334155;
+      font-size: 7.5px;
+      font-weight: 800;
+    }
+
+    .os-win-close {
+      background: #ef4444;
+      color: #fff;
+      border: none;
+      border-radius: 3px;
+      padding: 0 5px;
+      font-size: 7px;
+      cursor: pointer;
+      font-weight: 900;
+    }
+
+    .os-win-body {
+      flex: 1;
+      padding: 6px;
+      overflow-y: auto;
+      font-size: 7.5px;
+      line-height: 1.35;
+    }
+
+    .os-action-btn {
+      background: #0284c7;
+      color: #fff;
+      border: none;
+      border-radius: 4px;
+      padding: 4px 8px;
+      font-size: 7.5px;
+      font-weight: 700;
+      cursor: pointer;
+      margin-top: 4px;
+      display: inline-block;
+    }
+
+    .os-action-btn:hover {
+      background: #0369a1;
+    }
+
+    .os-action-btn.danger {
+      background: #dc2626;
+    }
+
+    /* OS Taskbar */
+    .os-taskbar {
+      height: 16px;
+      background: rgba(15, 23, 42, 0.92);
+      border-top: 1px solid rgba(255, 255, 255, 0.15);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 6px;
+      font-size: 6.5px;
+      z-index: 5;
+    }
+
+    /* Special Monitor Overlays (No Signal, BIOS Error, Rebooting, Malware Popups) */
+    #monitor-special-screen {
+      position: absolute;
+      inset: 0;
+      z-index: 20;
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 8px;
+    }
+
+    #monitor-special-screen.no-signal {
+      display: flex;
+      background: #020617;
+      color: #94a3b8;
+    }
+
+    #monitor-special-screen.bios-error {
+      display: flex;
+      background: #1e3a8a;
+      color: #fff;
+      font-family: var(--font-mono);
+    }
+
+    #monitor-special-screen.rebooting {
+      display: flex;
+      background: #090d16;
+      color: #38bdf8;
+    }
+
+    .malware-popup {
+      position: absolute;
+      background: #fef2f2;
+      color: #991b1b;
+      border: 1px solid #ef4444;
+      border-radius: 3px;
+      padding: 2px 4px;
+      font-size: 6px;
+      font-weight: 800;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.6);
+      z-index: 8;
+      pointer-events: none;
+    }
+
+    /* ================= PERIPHERALS (KEYBOARD & MOUSE) ================= */
+    .keyboard-prop {
+      position: absolute;
+      bottom: 24.5%;
+      left: 29%;
+      width: 22%;
+      height: 3.2%;
+      background: linear-gradient(180deg, #334155, #1e293b);
+      border-radius: 4px;
+      border-bottom: 2px solid #38bdf8;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.6);
+      z-index: 14;
+    }
+
+    .mouse-prop {
+      position: absolute;
+      bottom: 24.5%;
+      left: 53.5%;
+      width: 3.5%;
+      height: 2.8%;
+      background: #1e293b;
+      border-radius: 50% 50% 40% 40%;
+      border-top: 2px solid #22c55e;
+      box-shadow: 0 3px 8px rgba(0,0,0,0.6);
+      z-index: 14;
+    }
+
+    /* ================= PC TOWER & INTERNAL PARTS ================= */
+    #pc-tower {
+      position: absolute;
+      bottom: 29.5%;
+      right: 17%;
+      width: 17.5%;
+      height: 41%;
+      background: #111827;
+      border: 4px solid #374151;
+      border-radius: 10px;
+      box-shadow: 0 14px 35px rgba(0, 0, 0, 0.8);
+      display: flex;
+      flex-direction: column;
+      padding: 6px;
+      gap: 5px;
+      z-index: 15;
+      cursor: pointer;
+    }
+
+    .pc-front-io {
+      height: 14px;
+      background: #1f2937;
+      border-radius: 4px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 6px;
+      font-size: 8px;
+      color: #9ca3af;
+    }
+
+    .power-led {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: #22c55e;
+      box-shadow: 0 0 8px #22c55e;
+    }
+
+    /* Transparent Tempered Glass Interior */
+    .pc-interior {
+      flex: 1;
+      background: radial-gradient(circle at 50% 40%, #1e293b 0%, #090d16 100%);
+      border: 2px solid #4b5563;
+      border-radius: 6px;
+      position: relative;
+      overflow: hidden;
+      display: grid;
+      grid-template-columns: 1fr 24px;
+      grid-template-rows: 1fr 1fr 26%;
+      gap: 4px;
+      padding: 5px;
+    }
+
+    .pc-part-box {
+      border-radius: 4px;
+      border: 1px solid rgba(148, 163, 184, 0.3);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      font-size: 8px;
+      font-weight: 800;
+      position: relative;
+      transition: all 0.2s;
+    }
+
+    /* Motherboard background */
+    .part-mb {
+      grid-column: 1 / 2;
+      grid-row: 1 / 3;
+      background: rgba(30, 41, 59, 0.85);
+      justify-content: space-between;
+      padding: 4px;
+    }
+
+    .mb-top-row {
+      display: flex;
+      width: 100%;
+      justify-content: space-around;
+      align-items: center;
+      gap: 3px;
+    }
+
+    /* CPU + Cooler */
+    .part-cpu {
+      width: 48%;
+      aspect-ratio: 1;
+      background: #0f172a;
+      border: 2px solid #38bdf8;
+      border-radius: 6px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      font-size: 7.5px;
+      box-shadow: 0 0 10px rgba(56, 189, 248, 0.4);
+    }
+
+    .part-cpu.overheat {
+      border-color: #ef4444;
+      box-shadow: 0 0 14px #ef4444;
+      animation: shakeHard 0.2s infinite;
+    }
+
+    /* RAM sticks */
+    .part-ram {
+      width: 34%;
+      height: 44px;
+      background: #1e1b4b;
+      border: 1px solid #818cf8;
+      border-radius: 3px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      font-size: 7px;
+      position: relative;
+    }
+
+    .part-ram.shielded {
+      border: 2px solid #38bdf8;
+      box-shadow: 0 0 14px #38bdf8, inset 0 0 8px #38bdf8;
+      background: rgba(14, 165, 233, 0.35);
+    }
+
+    /* GPU */
+    .part-gpu {
+      width: 94%;
+      height: 26px;
+      background: linear-gradient(90deg, #312e81, #1e293b);
+      border: 1.5px solid #a855f7;
+      border-radius: 4px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 6px;
+      font-size: 7.5px;
+      box-shadow: 0 0 8px rgba(168, 85, 247, 0.35);
+    }
+
+    .part-gpu.failed {
+      border-color: #ef4444;
+      background: #450a0a;
+      box-shadow: 0 0 12px #ef4444;
+    }
+
+    /* Case Fans Column */
+    .part-fans {
+      grid-column: 2 / 3;
+      grid-row: 1 / 3;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-around;
+      align-items: center;
+      background: rgba(15, 23, 42, 0.7);
+      border-radius: 4px;
+      padding: 2px;
+    }
+
+    .fan-blade {
+      width: 16px;
+      height: 16px;
+      border-radius: 50%;
+      border: 2px dashed #64748b;
+    }
+
+    .fan-blade.spinning {
+      border-color: #38bdf8;
+      animation: spinFan 0.45s linear infinite;
+    }
+
+    @keyframes spinFan {
+      from { transform: rotate(0deg); }
+      to { transform: rotate(360deg); }
+    }
+
+    /* PSU & SSD Bottom Shroud */
+    .part-psu-shroud {
+      grid-column: 1 / 3;
+      grid-row: 3 / 4;
+      background: #0f172a;
+      border: 1px solid #475569;
+      border-radius: 4px;
+      display: flex;
+      align-items: center;
+      justify-content: space-around;
+      padding: 0 4px;
+      font-size: 7px;
+    }
+
+    /* DisplayPort Cable Indicator on Left/Rear of PC Tower */
+    #dp-cable-visual {
+      position: absolute;
+      left: -34px;
+      top: 52%;
+      width: 34px;
+      height: 10px;
+      background: #38bdf8;
+      border-radius: 4px 0 0 4px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 7px;
+      font-weight: 900;
+      color: #090d16;
+      box-shadow: 0 0 8px rgba(56, 189, 248, 0.6);
+      transition: top 0.35s ease, background 0.35s ease;
+    }
+
+    #dp-cable-visual.mb-mode {
+      top: 26%;
+      background: #22c55e;
+      box-shadow: 0 0 8px rgba(34, 197, 94, 0.7);
+    }
+
+    /* ================= DISASTER VISUAL EFFECTS ================= */
+    /* 1. Laser Beam */
+    #fx-laser {
+      position: absolute;
+      top: 12%;
+      left: 0;
+      width: 72%;
+      height: 8px;
+      background: linear-gradient(90deg, rgba(239,68,68,0.2), #ef4444, #ffffff, #ef4444);
+      box-shadow: 0 0 18px #ef4444, 0 0 35px #dc2626;
+      transform-origin: left center;
+      transform: rotate(15deg);
+      z-index: 25;
+      display: none;
+      pointer-events: none;
+    }
+
+    #fx-laser.active {
+      display: block;
+    }
+
+    #fx-laser.reflected {
+      width: 63%;
+    }
+
+    #fx-laser-bounce {
+      position: absolute;
+      top: 36%;
+      left: 61%;
+      width: 45%;
+      height: 7px;
+      background: linear-gradient(90deg, #ffffff, #38bdf8, transparent);
+      box-shadow: 0 0 16px #38bdf8;
+      transform-origin: left center;
+      transform: rotate(-55deg);
+      z-index: 25;
+      display: none;
+      pointer-events: none;
+    }
+
+    #fx-laser-bounce.active {
+      display: block;
+    }
+
+    /* Reflector Shield Prop */
+    #prop-reflector {
+      position: absolute;
+      top: 30%;
+      right: 35.5%;
+      width: 12px;
+      height: 74px;
+      background: linear-gradient(180deg, #e2e8f0, #38bdf8, #e2e8f0);
+      border: 2px solid #fff;
+      border-radius: 6px;
+      box-shadow: 0 0 16px #38bdf8;
+      transform: rotate(-18deg);
+      z-index: 26;
+      display: none;
+    }
+
+    #prop-reflector.active {
+      display: block;
+    }
+
+    /* 2. Flamethrower & Barrier */
+    #fx-flame {
+      position: absolute;
+      bottom: 36%;
+      right: 0;
+      width: 17%;
+      height: 75px;
+      background: radial-gradient(ellipse at right, #fef08a 0%, #f97316 45%, #dc2626 80%, transparent 100%);
+      filter: blur(2px);
+      border-radius: 50% 0 0 50%;
+      z-index: 25;
+      display: none;
+      animation: flameFlicker 0.12s infinite alternate;
+      pointer-events: none;
+    }
+
+    #fx-flame.active {
+      display: block;
+    }
+
+    @keyframes flameFlicker {
+      from { transform: scaleY(0.92) scaleX(0.96); }
+      to { transform: scaleY(1.08) scaleX(1.04); }
+    }
+
+    #prop-barrier {
+      position: absolute;
+      bottom: 28%;
+      right: 15.2%;
+      width: 21%;
+      height: 45%;
+      border: 3px solid #38bdf8;
+      border-radius: 16px;
+      background: rgba(56, 189, 248, 0.14);
+      box-shadow: 0 0 24px rgba(56, 189, 248, 0.55), inset 0 0 18px rgba(56, 189, 248, 0.35);
+      z-index: 24;
+      display: none;
+      pointer-events: none;
+    }
+
+    #prop-barrier.active {
+      display: block;
+    }
+
+    /* 3. Light-speed Proton Streak */
+    #fx-proton {
+      position: absolute;
+      top: 0;
+      right: 22%;
+      width: 6px;
+      height: 100%;
+      background: linear-gradient(180deg, transparent, #a855f7, #ffffff, #38bdf8, transparent);
+      box-shadow: 0 0 25px #a855f7;
+      z-index: 30;
+      display: none;
+      pointer-events: none;
+    }
+
+    #fx-proton.active {
+      display: block;
+      animation: protonFlash 0.35s ease-out;
+    }
+
+    @keyframes protonFlash {
+      0% { opacity: 1; transform: scaleX(3); }
+      100% { opacity: 0; transform: scaleX(0.2); }
+    }
+
+    /* 4. Flood Water Level */
+    #fx-flood {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      height: 0%;
+      background: linear-gradient(180deg, rgba(14, 165, 233, 0.62) 0%, rgba(3, 105, 161, 0.85) 100%);
+      border-top: 3px solid #7dd3fc;
+      z-index: 22;
+      transition: height 0.25s linear;
+      pointer-events: none;
+    }
+
+    #prop-pump-hose {
+      position: absolute;
+      bottom: 8%;
+      right: 5%;
+      background: #eab308;
+      color: #090d16;
+      font-weight: 900;
+      font-size: 10px;
+      padding: 4px 8px;
+      border-radius: 6px;
+      border: 2px solid #fef08a;
+      z-index: 27;
+      display: none;
+    }
+
+    #prop-pump-hose.active {
+      display: block;
+    }
+
+    /* 5. Robber Character */
+    #fx-robber {
+      position: absolute;
+      bottom: 22%;
+      left: 4%;
+      z-index: 28;
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      transition: left 0.15s ease;
+    }
+
+    #fx-robber.active {
+      display: flex;
+    }
+
+    .robber-sprite {
+      font-size: 54px;
+      filter: drop-shadow(0 6px 12px rgba(0,0,0,0.8));
+    }
+
+    .robber-tag {
+      background: #dc2626;
+      color: #fff;
+      font-size: 10px;
+      font-weight: 800;
+      padding: 2px 6px;
+      border-radius: 4px;
+    }
+
+    @keyframes shakeHard {
+      0% { transform: translate(-1px, 1px); }
+      50% { transform: translate(1px, -1px); }
+      100% { transform: translate(-1px, -1px); }
+    }
+
+    /* ================= BOTTOM TELEMETRY & COUNTERMEASURES ================= */
+    #bottom-dock {
+      background: var(--panel-bg);
+      border-top: 1px solid rgba(148, 163, 184, 0.25);
+      padding: 8px 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      z-index: 50;
+    }
+
+    /* Action Buttons Row */
+    #action-toolbar {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+
+    .ctrl-btn {
+      background: #1e293b;
+      color: #f8fafc;
+      border: 1.5px solid #475569;
+      border-radius: 9px;
+      padding: 7px 12px;
+      font-size: 0.8rem;
+      font-weight: 800;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.15s;
+    }
+
+    .ctrl-btn:hover {
+      border-color: var(--accent-blue);
+      background: #273549;
+    }
+
+    .ctrl-btn.engaged {
+      background: rgba(14, 165, 233, 0.25);
+      border-color: #38bdf8;
+      color: #7dd3fc;
+      box-shadow: 0 0 12px rgba(56, 189, 248, 0.3);
+    }
+
+    .ctrl-btn.warn-pulse {
+      border-color: #facc15;
+      box-shadow: 0 0 12px rgba(250, 204, 21, 0.45);
+    }
+
+    /* Parts Status Grid */
+    #parts-grid {
+      display: grid;
+      grid-template-columns: repeat(6, 1fr);
+      gap: 8px;
+    }
+
+    .part-card {
+      background: rgba(15, 23, 42, 0.9);
+      border: 1px solid rgba(148, 163, 184, 0.22);
+      border-radius: 8px;
+      padding: 6px 8px;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .part-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 0.75rem;
+      font-weight: 800;
+    }
+
+    .part-metric {
+      font-family: var(--font-mono);
+      font-size: 0.72rem;
+      color: #38bdf8;
+    }
+
+    .part-hp-bar {
+      height: 6px;
+      background: #1e293b;
+      border-radius: 999px;
+      overflow: hidden;
+    }
+
+    .part-hp-fill {
+      height: 100%;
+      width: 100%;
+      background: #22c55e;
+      transition: width 0.2s, background 0.2s;
+    }
+
+    @media (max-width: 900px) {
+      #parts-grid {
+        grid-template-columns: repeat(3, 1fr);
+      }
+      #monitor-assembly {
+        left: 16%;
+        width: 42%;
+      }
+      #pc-tower {
+        right: 10%;
+        width: 22%;
+      }
+    }
+
+    @media (max-width: 600px) {
+      .ctrl-btn {
+        padding: 6px 8px;
+        font-size: 0.72rem;
+      }
+      #parts-grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ================= START SCREEN ================= -->
+  <div id="start-screen" class="overlay-screen">
+    <div class="title-badge">PC DESK DEFENSE SIMULATION</div>
+    <h1 class="game-title">PCの守護神</h1>
+    <p class="game-subtitle">
+      次々と襲いかかる物理災害・サイバー攻撃・ハードウェア異常から愛用のPCデスクを守り抜け！<br>
+      モニターをクリックしてOSを操作し、デスク上の防衛設備を駆使して耐久値0を防ごう。
+    </p>
+
+    <div class="spec-selector" id="spec-selector">
+      <div class="spec-card selected" data-spec="standard">
+        <h4>🖥️ ミドルスペックPC</h4>
+        <p>標準的な構成。バランスが良く扱いやすい。（レーザー軽減率: 55%）</p>
+      </div>
+      <div class="spec-card" data-spec="highend">
+        <h4>🚀 ハイエンドゲーミング</h4>
+        <p>強化ガラス＆高冷却構成。レーザー反射効率が高く熱耐性も優秀。（軽減率: 85%）</p>
+      </div>
+      <div class="spec-card" data-spec="budget">
+        <h4>📦 エントリー自作PC</h4>
+        <p>軽量ケース構成。難易度の高い上級者向け。（レーザー軽減率: 35%）</p>
+      </div>
+    </div>
+
+    <button id="start-btn" class="btn-primary">▶ ゲームスタート</button>
+
+    <div class="manual-grid">
+      <div class="manual-item"><strong>1. 大量マルウェア</strong><span>モニタークリック → セキュリティソフト起動</span></div>
+      <div class="manual-item"><strong>2. CPUへの超強レーザー</strong><span>「反射板設置」でダメージ軽減（性能依存）</span></div>
+      <div class="manual-item"><strong>3. 横から火炎放射</strong><span>「バリア展開」で防御（バリアHP制）</span></div>
+      <div class="manual-item"><strong>4. 光速まで加速された陽子</strong><span>警告が出たら即「RAMガード ON」</span></div>
+      <div class="manual-item"><strong>5. 水冷停止</strong><span>「ケースファン切替」で空冷冷却へ移行</span></div>
+      <div class="manual-item"><strong>6. 洪水・冠水</strong><span>「排水ポンプ稼働」で屋外へ排水</span></div>
+      <div class="manual-item"><strong>7. CPU劣化</strong><span>キーボードの「Cキー」を連打して修復</span></div>
+      <div class="manual-item"><strong>8. GPU停止</strong><span>復旧まで「DPケーブルをマザーボード側」へ</span></div>
+      <div class="manual-item"><strong>9. 強盗襲来</strong><span>キーボードの「Tキー」を連打して撃退</span></div>
+      <div class="manual-item"><strong>10. BIOSエラー</strong><span>モニタークリック → OSから「再起動」</span></div>
+    </div>
+  </div>
+
+  <!-- ================= GAME OVER SCREEN ================= -->
+  <div id="gameover-screen" class="overlay-screen hidden">
+    <div class="title-badge" style="border-color:#ef4444;color:#f87171;">SYSTEM CRITICAL FAILURE</div>
+    <h1 class="game-title" style="background:linear-gradient(135deg,#fff,#ef4444);-webkit-background-clip:text;-webkit-text-fill-color:transparent;">PC破損・ゲームオーバー</h1>
+    <p id="gameover-reason" class="game-subtitle" style="color:#fca5a5;font-weight:700;"></p>
+    <div class="hud-pill" style="margin-bottom:24px;font-size:1.1rem;padding:10px 22px;">
+      <span>防衛生存時間:</span>
+      <span id="final-time" class="val">00:00</span>
+      <span style="margin-left:14px;">解決イベント数:</span>
+      <span id="final-resolved" class="val">0</span>
+    </div>
+    <button id="restart-game-btn" class="btn-primary">↻ もう一度プレイ</button>
+  </div>
+
+  <!-- ================= MAIN GAME CONTAINER ================= -->
+  <div id="game-container">
+    <!-- TOP HUD -->
+    <header id="top-hud">
+      <div class="hud-group">
+        <div class="hud-pill">⏱️ 経過時間: <span id="hud-time" class="val">00:00</span></div>
+        <div class="hud-pill">⚠️ 脅威Lv: <span id="hud-level" class="val">1</span></div>
+        <div class="hud-pill">🛡️ 解決数: <span id="hud-resolved" class="val">0</span></div>
+      </div>
+
+      <div class="hud-pill overall-hp-wrap">
+        <span>🖥️ PC全体耐久:</span>
+        <div class="bar-track">
+          <div id="overall-hp-bar" class="bar-fill"></div>
+        </div>
+        <span id="overall-hp-text" class="val">100%</span>
+      </div>
+
+      <div class="hud-group">
+        <button id="pause-btn" class="hud-btn">⏸️ 一時停止 (Space)</button>
+        <button id="sound-btn" class="hud-btn active">🔊 警告音: ON</button>
+      </div>
+    </header>
+
+    <!-- ACTIVE DISASTER ALERTS -->
+    <div id="alert-ticker"></div>
+
+    <!-- DESK STAGE VIEWPORT -->
+    <main id="stage-viewport">
+      <button id="exit-zoom-btn">🔍 デスク視点へ戻る (ESC / モニター外クリック)</button>
+
+      <div id="camera-rig">
+        <!-- Room Window -->
+        <div class="room-window">
+          <div class="window-moon"></div>
+        </div>
+
+        <!-- Desk & Legs -->
+        <div class="desk-top"></div>
+        <div class="desk-leg-left"></div>
+        <div class="desk-leg-right"></div>
+
+        <!-- MONITOR ASSEMBLY -->
+        <div id="monitor-assembly" title="クリックしてモニターをズーム操作">
+          <div class="monitor-bezel">
+            <div id="monitor-screen">
+              <!-- Desktop Icons -->
+              <div class="os-desktop" id="os-desktop">
+                <div class="os-icon" data-app="security">
+                  <div class="os-icon-emoji">🛡️</div>
+                  <div class="os-icon-label">セキュリティ<br>ソフト</div>
+                </div>
+                <div class="os-icon" data-app="taskmgr">
+                  <div class="os-icon-emoji">📊</div>
+                  <div class="os-icon-label">タスク<br>マネージャー</div>
+                </div>
+                <div class="os-icon" data-app="bios">
+                  <div class="os-icon-emoji">⚙️</div>
+                  <div class="os-icon-label">BIOS<br>状態確認</div>
+                </div>
+                <div class="os-icon" data-app="network">
+                  <div class="os-icon-emoji">🌐</div>
+                  <div class="os-icon-label">ネットワーク<br>状態確認</div>
+                </div>
+                <div class="os-icon" data-app="restart">
+                  <div class="os-icon-emoji">🔄</div>
+                  <div class="os-icon-label">再起動</div>
+                </div>
+                <div class="os-icon" data-app="shutdown">
+                  <div class="os-icon-emoji">⏻</div>
+                  <div class="os-icon-label">シャットダウン</div>
+                </div>
+
+                <!-- OS Active App Window -->
+                <div id="os-window">
+                  <div class="os-win-header">
+                    <span id="os-win-title">App</span>
+                    <button id="os-win-close" class="os-win-close">✕</button>
+                  </div>
+                  <div id="os-win-body" class="os-win-body"></div>
+                </div>
+              </div>
+
+              <!-- Special Full-Monitor States (No Signal / BIOS Error / Rebooting) -->
+              <div id="monitor-special-screen"></div>
+
+              <!-- OS Taskbar -->
+              <div class="os-taskbar">
+                <span>🪟 GuardianOS</span>
+                <span id="os-clock">19:55</span>
+              </div>
+            </div>
+          </div>
+          <div class="monitor-stand-neck"></div>
+          <div class="monitor-stand-base"></div>
+        </div>
+
+        <!-- Keyboard & Mouse -->
+        <div class="keyboard-prop" title="キーボード (C/T/ESC/Space対応)"></div>
+        <div class="mouse-prop" title="ゲーミングマウス"></div>
+
+        <!-- PC TOWER CASE -->
+        <div id="pc-tower" title="PC本体（内部パーツ監視）">
+          <div id="dp-cable-visual" title="DisplayPort接続先">DP:GPU</div>
+          <div class="pc-front-io">
+            <span>GUARDIAN-ATX</span>
+            <div class="power-led" id="pc-power-led"></div>
+          </div>
+          <div class="pc-interior">
+            <div class="part-mb">
+              <div class="mb-top-row">
+                <div class="part-cpu" id="vis-cpu">
+                  <span>CPU</span>
+                  <span id="vis-cpu-temp">42°C</span>
+                </div>
+                <div class="part-ram" id="vis-ram">
+                  <span>RAM</span>
+                  <span id="vis-ram-pct">28%</span>
+                </div>
+              </div>
+              <div class="part-gpu" id="vis-gpu">
+                <span>RTX-GPU</span>
+                <span id="vis-gpu-temp">45°C</span>
+              </div>
+            </div>
+            <div class="part-fans" id="vis-fans">
+              <div class="fan-blade" id="fan-1"></div>
+              <div class="fan-blade" id="fan-2"></div>
+              <div class="fan-blade" id="fan-3"></div>
+            </div>
+            <div class="part-psu-shroud">
+              <span>PSU: <b id="vis-watt">240W</b></span>
+              <span>NVMe SSD</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- VISUAL DISASTER EFFECTS -->
+        <div id="fx-laser"></div>
+        <div id="fx-laser-bounce"></div>
+        <div id="prop-reflector"></div>
+
+        <div id="fx-flame"></div>
+        <div id="prop-barrier"></div>
+
+        <div id="fx-proton"></div>
+
+        <div id="fx-flood"></div>
+        <div id="prop-pump-hose">🚰 排水ポンプ稼働中</div>
+
+        <div id="fx-robber">
+          <div class="robber-sprite">🥷</div>
+          <div class="robber-tag">強盗接近中! [T連打]</div>
+        </div>
+      </div>
+    </main>
+
+    <!-- BOTTOM DOCK: COUNTERMEASURES & PART TELEMETRY -->
+    <footer id="bottom-dock">
+      <div id="action-toolbar">
+        <button class="ctrl-btn" id="btn-monitor-zoom">🖥️ モニター操作</button>
+        <button class="ctrl-btn" id="btn-reflector">🪞 反射板設置: <span id="state-reflector">OFF</span></button>
+        <button class="ctrl-btn" id="btn-barrier">🔰 バリア展開: <span id="state-barrier">OFF (100)</span></button>
+        <button class="ctrl-btn" id="btn-ramguard">⚡ RAMガード: <span id="state-ramguard">OFF</span></button>
+        <button class="ctrl-btn" id="btn-casefan">🌀 冷却切替: <span id="state-cooling">水冷稼働</span></button>
+        <button class="ctrl-btn" id="btn-pump">🚰 排水ポンプ: <span id="state-pump">OFF</span></button>
+        <button class="ctrl-btn" id="btn-dpcable">🔌 DP接続先: <span id="state-dp">GPU側</span></button>
+      </div>
+
+      <div id="parts-grid">
+        <div class="part-card">
+          <div class="part-header"><span>CPU</span><span class="part-metric" id="stat-cpu">42°C | HP 100</span></div>
+          <div class="part-hp-bar"><div class="part-hp-fill" id="bar-cpu"></div></div>
+        </div>
+        <div class="part-card">
+          <div class="part-header"><span>GPU</span><span class="part-metric" id="stat-gpu">45°C | HP 100</span></div>
+          <div class="part-hp-bar"><div class="part-hp-fill" id="bar-gpu"></div></div>
+        </div>
+        <div class="part-card">
+          <div class="part-header"><span>RAM</span><span class="part-metric" id="stat-ram">28% | HP 100</span></div>
+          <div class="part-hp-bar"><div class="part-hp-fill" id="bar-ram"></div></div>
+        </div>
+        <div class="part-card">
+          <div class="part-header"><span>マザーボード</span><span class="part-metric" id="stat-mb">正常 | HP 100</span></div>
+          <div class="part-hp-bar"><div class="part-hp-fill" id="bar-mb"></div></div>
+        </div>
+        <div class="part-card">
+          <div class="part-header"><span>電源 (PSU)</span><span class="part-metric" id="stat-psu">240W | HP 100</span></div>
+          <div class="part-hp-bar"><div class="part-hp-fill" id="bar-psu"></div></div>
+        </div>
+        <div class="part-card">
+          <div class="part-header"><span>SSD</span><span class="part-metric" id="stat-ssd">良好 | HP 100</span></div>
+          <div class="part-hp-bar"><div class="part-hp-fill" id="bar-ssd"></div></div>
+        </div>
+      </div>
+    </footer>
+  </div>
+
+  <script>
+    (() => {
+      "use strict";
+
+      /* =====================================================================
+       * 1. WEB AUDIO SYNTHESIZER (No external audio files needed)
+       * ===================================================================== */
+      class SoundEngine {
+        constructor() {
+          this.ctx = null;
+          this.enabled = true;
+        }
+
+        init() {
+          if (!this.ctx) {
+            const AudioCtx = window.AudioContext || window.webkitAudioContext;
+            if (AudioCtx) this.ctx = new AudioCtx();
+          }
+          if (this.ctx && this.ctx.state === "suspended") {
+            this.ctx.resume().catch(() => {});
+          }
+        }
+
+        playTone(freq, type = "sine", duration = 0.15, volume = 0.12, delay = 0) {
+          if (!this.enabled) return;
+          this.init();
+          if (!this.ctx) return;
+
+          const now = this.ctx.currentTime + delay;
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+          osc.type = type;
+          osc.frequency.setValueAtTime(freq, now);
+
+          gain.gain.setValueAtTime(volume, now);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + duration);
+
+          osc.connect(gain);
+          gain.connect(this.ctx.destination);
+          osc.start(now);
+          osc.stop(now + duration);
+        }
+
+        playAlarm() {
+          this.playTone(880, "sawtooth", 0.16, 0.12, 0);
+          this.playTone(660, "sawtooth", 0.22, 0.12, 0.17);
+        }
+
+        playProtonAlert() {
+          this.playTone(1320, "square", 0.09, 0.14, 0);
+          this.playTone(1760, "square", 0.09, 0.14, 0.1);
+          this.playTone(2093, "square", 0.14, 0.14, 0.2);
+        }
+
+        playClick() {
+          this.playTone(520, "triangle", 0.06, 0.08, 0);
+        }
+
+        playSuccess() {
+          this.playTone(523.25, "sine", 0.1, 0.12, 0);
+          this.playTone(659.25, "sine", 0.1, 0.12, 0.09);
+          this.playTone(783.99, "sine", 0.18, 0.12, 0.18);
+        }
+
+        playDamage() {
+          this.playTone(130, "sawtooth", 0.18, 0.15, 0);
+        }
+      }
+
+      const sound = new SoundEngine();
+
+      /* =====================================================================
+       * 2. GAME STATE & CONFIGURATION
+       * ===================================================================== */
+      const SPEC_CONFIG = {
+        budget:   { name: "エントリー自作PC", laserMitigation: 0.35, coolBonus: 0.85 },
+        standard: { name: "ミドルスペックPC", laserMitigation: 0.55, coolBonus: 1.00 },
+        highend:  { name: "ハイエンドゲーミング", laserMitigation: 0.85, coolBonus: 1.25 }
+      };
+
+      const state = {
+        running: false,
+        paused: false,
+        gameOver: false,
+        spec: "standard",
+        elapsed: 0,
+        threatLevel: 1,
+        resolvedCount: 0,
+        spawnCooldown: 3.5,
+
+        // Camera & Monitor UI
+        zoomedMonitor: false,
+        activeApp: null,
+        rebootTimer: 0,
+        shutdownMode: false,
+        malwarePopups: [],
+
+        // Defense Toggles & Equipment
+        reflectorActive: false,
+        barrierActive: false,
+        barrierHp: 100,
+        barrierMaxHp: 100,
+        ramGuardActive: false,
+        coolingMode: "aio", // "aio" | "casefan"
+        pumpActive: false,
+        dpPort: "gpu", // "gpu" | "mb"
+        floodLevel: 0, // 0 to 100%
+
+        // PC Hardware Parts
+        parts: {
+          cpu: { hp: 100, maxHp: 100, temp: 42 },
+          gpu: { hp: 100, maxHp: 100, temp: 45, failed: false },
+          ram: { hp: 100, maxHp: 100, usage: 28 },
+          mb:  { hp: 100, maxHp: 100 },
+          psu: { hp: 100, maxHp: 100, watts: 240 },
+          ssd: { hp: 100, maxHp: 100 }
+        },
+
+        // Active Events Map: id -> event object
+        events: {}
+      };
+
+      /* =====================================================================
+       * 3. DOM REFERENCES
+       * ===================================================================== */
+      const el = {
+        startScreen: document.getElementById("start-screen"),
+        gameoverScreen: document.getElementById("gameover-screen"),
+        gameoverReason: document.getElementById("gameover-reason"),
+        finalTime: document.getElementById("final-time"),
+        finalResolved: document.getElementById("final-resolved"),
+        hudTime: document.getElementById("hud-time"),
+        hudLevel: document.getElementById("hud-level"),
+        hudResolved: document.getElementById("hud-resolved"),
+        overallHpBar: document.getElementById("overall-hp-bar"),
+        overallHpText: document.getElementById("overall-hp-text"),
+        pauseBtn: document.getElementById("pause-btn"),
+        soundBtn: document.getElementById("sound-btn"),
+        alertTicker: document.getElementById("alert-ticker"),
+        stageViewport: document.getElementById("stage-viewport"),
+        cameraRig: document.getElementById("camera-rig"),
+        exitZoomBtn: document.getElementById("exit-zoom-btn"),
+        monitorAssembly: document.getElementById("monitor-assembly"),
+        osDesktop: document.getElementById("os-desktop"),
+        osWindow: document.getElementById("os-window"),
+        osWinTitle: document.getElementById("os-win-title"),
+        osWinBody: document.getElementById("os-win-body"),
+        osWinClose: document.getElementById("os-win-close"),
+        osClock: document.getElementById("os-clock"),
+        monitorSpecial: document.getElementById("monitor-special-screen"),
+        dpCableVisual: document.getElementById("dp-cable-visual"),
+        pcPowerLed: document.getElementById("pc-power-led"),
+        visCpu: document.getElementById("vis-cpu"),
+        visCpuTemp: document.getElementById("vis-cpu-temp"),
+        visRam: document.getElementById("vis-ram"),
+        visRamPct: document.getElementById("vis-ram-pct"),
+        visGpu: document.getElementById("vis-gpu"),
+        visGpuTemp: document.getElementById("vis-gpu-temp"),
+        visWatt: document.getElementById("vis-watt"),
+        fans: [document.getElementById("fan-1"), document.getElementById("fan-2"), document.getElementById("fan-3")],
+        // Visual FX
+        fxLaser: document.getElementById("fx-laser"),
+        fxLaserBounce: document.getElementById("fx-laser-bounce"),
+        propReflector: document.getElementById("prop-reflector"),
+        fxFlame: document.getElementById("fx-flame"),
+        propBarrier: document.getElementById("prop-barrier"),
+        fxProton: document.getElementById("fx-proton"),
+        fxFlood: document.getElementById("fx-flood"),
+        propPumpHose: document.getElementById("prop-pump-hose"),
+        fxRobber: document.getElementById("fx-robber"),
+        // Action Buttons
+        btnMonitorZoom: document.getElementById("btn-monitor-zoom"),
+        btnReflector: document.getElementById("btn-reflector"),
+        btnBarrier: document.getElementById("btn-barrier"),
+        btnRamGuard: document.getElementById("btn-ramguard"),
+        btnCaseFan: document.getElementById("btn-casefan"),
+        btnPump: document.getElementById("btn-pump"),
+        btnDpCable: document.getElementById("btn-dpcable"),
+        stateReflector: document.getElementById("state-reflector"),
+        stateBarrier: document.getElementById("state-barrier"),
+        stateRamGuard: document.getElementById("state-ramguard"),
+        stateCooling: document.getElementById("state-cooling"),
+        statePump: document.getElementById("state-pump"),
+        stateDp: document.getElementById("state-dp"),
+        // Telemetry Cards
+        statCpu: document.getElementById("stat-cpu"),
+        statGpu: document.getElementById("stat-gpu"),
+        statRam: document.getElementById("stat-ram"),
+        statMb: document.getElementById("stat-mb"),
+        statPsu: document.getElementById("stat-psu"),
+        statSsd: document.getElementById("stat-ssd"),
+        barCpu: document.getElementById("bar-cpu"),
+        barGpu: document.getElementById("bar-gpu"),
+        barRam: document.getElementById("bar-ram"),
+        barMb: document.getElementById("bar-mb"),
+        barPsu: document.getElementById("bar-psu"),
+        barSsd: document.getElementById("bar-ssd")
+      };
+
+      /* =====================================================================
+       * 4. DISASTER DEFINITIONS (All 10 Events)
+       * ===================================================================== */
+      const EVENT_DEFS = {
+        malware: {
+          name: "🦠 大量マルウェア感染",
+          hint: "モニターをクリック → セキュリティソフトで駆除！",
+          duration: 24,
+          isProton: false
+        },
+        laser: {
+          name: "🔦 CPUへの超強レーザー",
+          hint: "「反射板設置」をONにしてCPU直撃を防げ！",
+          duration: 18,
+          isProton: false
+        },
+        flame: {
+          name: "🔥 横から火炎放射",
+          hint: "「バリア展開」で防御！バリアHP切れに注意",
+          duration: 18,
+          isProton: false
+        },
+        proton: {
+          name: "☄️ 光速まで加速された陽子",
+          hint: "着弾前に即座に「RAMガード ON」にしろ！",
+          duration: 5.5,
+          isProton: true
+        },
+        aio_fail: {
+          name: "💧 水冷ポンプ停止",
+          hint: "「冷却切替」でケースファンへ切り替えろ！",
+          duration: 20,
+          isProton: false
+        },
+        flood: {
+          name: "🌊 洪水・冠水発生",
+          hint: "「排水ポンプ」をONにして屋外へ排水！",
+          duration: 22,
+          isProton: false
+        },
+        cpu_degrade: {
+          name: "⚠️ CPU劣化進行",
+          hint: "【Cキー】を連打してシリコン安定性を修復！",
+          duration: 16,
+          isProton: false,
+          mashKey: "C"
+        },
+        gpu_fail: {
+          name: "🎮 GPU停止（映像出力喪失）",
+          hint: "復旧まで「DP接続先」をマザーボード側へ差替！",
+          duration: 16,
+          isProton: false
+        },
+        robber: {
+          name: "🥷 強盗侵入！PC強奪の危機",
+          hint: "【Tキー】を連打して強盗を追い払え！",
+          duration: 16,
+          isProton: false,
+          mashKey: "T"
+        },
+        bios_error: {
+          name: "💥 BIOSエラー発生",
+          hint: "モニターをクリック → OSから「再起動」を実行！",
+          duration: 22,
+          isProton: false
+        }
+      };
+
+      /* =====================================================================
+       * 5. HELPER FUNCTIONS
+       * ===================================================================== */
+      function formatTime(sec) {
+        const m = Math.floor(sec / 60);
+        const s = Math.floor(sec % 60);
+        return `${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
+      }
+
+      function clamp(val, min, max) {
+        return Math.max(min, Math.min(max, val));
+      }
+
+      function getOverallHp() {
+        const p = state.parts;
+        const sum = p.cpu.hp + p.gpu.hp + p.ram.hp + p.mb.hp + p.psu.hp + p.ssd.hp;
+        return Math.max(0, Math.round(sum / 6));
+      }
+
+      function damagePart(partKey, amount) {
+        const part = state.parts[partKey];
+        if (!part) return;
+        part.hp = clamp(part.hp - amount, 0, part.maxHp);
+      }
+
+      function healPart(partKey, amount) {
+        const part = state.parts[partKey];
+        if (!part) return;
+        part.hp = clamp(part.hp + amount, 0, part.maxHp);
+      }
+
+      /* =====================================================================
+       * 6. MONITOR ZOOM & OS APPLICATIONS
+       * ===================================================================== */
+      function setMonitorZoom(zoomed) {
+        state.zoomedMonitor = zoomed;
+        el.cameraRig.classList.toggle("zoomed-monitor", zoomed);
+        el.exitZoomBtn.classList.toggle("visible", zoomed);
+        sound.playClick();
+      }
+
+      function openOsApp(appId) {
+        if (state.rebootTimer > 0 || state.shutdownMode) return;
+        state.activeApp = appId;
+        el.osWindow.classList.add("open");
+        sound.playClick();
+        renderOsApp();
+      }
+
+      function closeOsApp() {
+        state.activeApp = null;
+        el.osWindow.classList.remove("open");
+        sound.playClick();
+      }
+
+      function triggerOsReboot() {
+        sound.playClick();
+        state.activeApp = null;
+        el.osWindow.classList.remove("open");
+        state.shutdownMode = false;
+        state.rebootTimer = 3.2;
+
+        // If BIOS error is active, resolve it upon reboot
+        if (state.events.bios_error) {
+          resolveEvent("bios_error");
+        }
+      }
+
+      function triggerOsShutdown() {
+        sound.playClick();
+        state.activeApp = null;
+        el.osWindow.classList.remove("open");
+        state.shutdownMode = true;
+      }
+
+      function renderOsApp() {
+        if (!state.activeApp) return;
+        const app = state.activeApp;
+        const p = state.parts;
+
+        if (app === "security") {
+          el.osWinTitle.textContent = "🛡️ Guardian Security Pro";
+          const infected = Boolean(state.events.malware);
+          el.osWinBody.innerHTML = infected
+            ? `<div style="color:#f87171;font-weight:800;">⚠️ 警告: 大量のマルウェアを検知！</div>
+               <p style="margin:3px 0;">不正プロセスがCPU・RAM・SSDを攻撃中。</p>
+               <button class="os-action-btn danger" id="os-btn-clean-malware">🧹 今すぐ完全駆除を実行</button>`
+            : `<div style="color:#4ade80;font-weight:800;">✅ システムは安全です</div>
+               <p style="margin:3px 0;">リアルタイム保護: 有効<br>脅威データベース: 最新</p>`;
+
+          const cleanBtn = document.getElementById("os-btn-clean-malware");
+          if (cleanBtn) {
+            cleanBtn.onclick = () => {
+              resolveEvent("malware");
+              clearMalwarePopups();
+              renderOsApp();
+            };
+          }
+        } else if (app === "taskmgr") {
+          el.osWinTitle.textContent = "📊 タスクマネージャー";
+          const rogueProc = state.events.malware ? `<div style="color:#f87171;">• trojan_miner.exe (CPU 78%)</div>` : "";
+          el.osWinBody.innerHTML = `
+            <div>CPU負荷: <b>${state.events.malware ? 94 : 26}%</b> (${Math.round(p.cpu.temp)}°C)</div>
+            <div>GPU負荷: <b>${p.gpu.failed ? "ERROR" : "34%"}</b> (${Math.round(p.gpu.temp)}°C)</div>
+            <div>RAM使用率: <b>${Math.round(p.ram.usage)}%</b></div>
+            <div>消費電力: <b>${Math.round(p.psu.watts)}W</b></div>
+            <hr style="border-color:#334155;margin:3px 0;">
+            <div>実行中プロセス:</div>
+            <div>• GuardianOS_Core.exe (正常)</div>
+            ${rogueProc}
+          `;
+        } else if (app === "bios") {
+          el.osWinTitle.textContent = "⚙️ UEFI / BIOS ステータス";
+          const biosErr = Boolean(state.events.bios_error);
+          el.osWinBody.innerHTML = biosErr
+            ? `<div style="color:#f87171;font-weight:800;">❌ CRITICAL BIOS CHECKSUM ERROR</div>
+               <p style="margin:3px 0;">ファームウェア異常。直ちにOSを再起動してください。</p>
+               <button class="os-action-btn danger" id="os-btn-bios-reboot">🔄 今すぐ再起動</button>`
+            : `<div style="color:#4ade80;font-weight:800;">✅ BIOS ROM: 正常 (v4.20)</div>
+               <div>CPU Vcore: 1.24V | RAM XMP: Enabled</div>
+               <div>マザーボード健全性: ${Math.round(p.mb.hp)}%</div>`;
+
+          const bBtn = document.getElementById("os-btn-bios-reboot");
+          if (bBtn) bBtn.onclick = triggerOsReboot;
+        } else if (app === "network") {
+          el.osWinTitle.textContent = "🌐 ネットワーク状態確認";
+          const netWarn = Boolean(state.events.malware);
+          el.osWinBody.innerHTML = `
+            <div>接続: <b>Ethernet 10Gbps (オンライン)</b></div>
+            <div>ファイアウォール: <b>有効</b></div>
+            <div>トラフィック: <b style="color:${netWarn ? "#f87171" : "#4ade80"}">${netWarn ? "異常な外部通信を検知！" : "安定 (12 Mbps)"}</b></div>
+          `;
+        } else if (app === "restart") {
+          el.osWinTitle.textContent = "🔄 システム再起動";
+          el.osWinBody.innerHTML = `
+            <p style="margin:2px 0 6px;">PCを再起動してBIOSやOSの不整合を修復します。</p>
+            <button class="os-action-btn" id="os-btn-do-reboot">🔄 再起動を実行する</button>
+          `;
+          document.getElementById("os-btn-do-reboot").onclick = triggerOsReboot;
+        } else if (app === "shutdown") {
+          el.osWinTitle.textContent = "⏻ シャットダウン";
+          el.osWinBody.innerHTML = `
+            <p style="margin:2px 0 6px;">一時的にシステムを停止して発熱を抑えます（電源ボタンで復帰）。</p>
+            <button class="os-action-btn danger" id="os-btn-do-shutdown">⏻ シャットダウン実行</button>
+          `;
+          document.getElementById("os-btn-do-shutdown").onclick = triggerOsShutdown;
+        }
+      }
+
+      function spawnMalwarePopup() {
+        if (state.malwarePopups.length >= 7) return;
+        const div = document.createElement("div");
+        div.className = "malware-popup";
+        div.textContent = "⚠️ VIRUS ALERT! SYSTEM INFECTED";
+        div.style.left = `${8 + Math.random() * 48}%`;
+        div.style.top = `${10 + Math.random() * 58}%`;
+        el.osDesktop.appendChild(div);
+        state.malwarePopups.push(div);
+      }
+
+      function clearMalwarePopups() {
+        state.malwarePopups.forEach(node => node.remove());
+        state.malwarePopups = [];
+      }
+
+      /* =====================================================================
+       * 7. EVENT SPAWNING & RESOLUTION
+       * ===================================================================== */
+      function spawnRandomEvent() {
+        const allKeys = Object.keys(EVENT_DEFS);
+        const available = allKeys.filter(k => !state.events[k]);
+        if (available.length === 0) return;
+
+        // Limit simultaneous active disasters based on threat level
+        const maxConcurrent = Math.min(4, 1 + Math.floor(state.threatLevel / 2));
+        if (Object.keys(state.events).length >= maxConcurrent) return;
+
+        const chosen = available[Math.floor(Math.random() * available.length)];
+        const def = EVENT_DEFS[chosen];
+
+        // Scale duration slightly by difficulty
+        const duration = def.isProton
+          ? Math.max(3.4, def.duration - (state.threatLevel - 1) * 0.25)
+          : def.duration;
+
+        state.events[chosen] = {
+          id: chosen,
+          name: def.name,
+          hint: def.hint,
+          timer: duration,
+          maxTimer: duration,
+          progress: 0, // Used for C-mash, T-mash, or GPU recovery
+          mashKey: def.mashKey || null
+        };
+
+        if (chosen === "gpu_fail") {
+          state.parts.gpu.failed = true;
+        }
+
+        if (def.isProton) {
+          sound.playProtonAlert();
+        } else {
+          sound.playAlarm();
+        }
+
+        if (state.activeApp) renderOsApp();
+      }
+
+      function resolveEvent(id) {
+        if (!state.events[id]) return;
+        delete state.events[id];
+        state.resolvedCount += 1;
+
+        if (id === "malware") clearMalwarePopups();
+        if (id === "gpu_fail") state.parts.gpu.failed = false;
+
+        sound.playSuccess();
+        if (state.activeApp) renderOsApp();
+      }
+
+      function handleMashAction(keyChar) {
+        if (!state.running || state.paused || state.gameOver) return;
+        const upper = keyChar.toUpperCase();
+
+        if (upper === "C" && state.events.cpu_degrade) {
+          sound.playClick();
+          state.events.cpu_degrade.progress += 14;
+          healPart("cpu", 1.5);
+          if (state.events.cpu_degrade.progress >= 100) {
+            resolveEvent("cpu_degrade");
+          }
+        } else if (upper === "T" && state.events.robber) {
+          sound.playClick();
+          state.events.robber.progress += 14;
+          if (state.events.robber.progress >= 100) {
+            resolveEvent("robber");
+          }
+        }
+      }
+
+      /* =====================================================================
+       * 8. SIMULATION TICK (FIXED / DELTA TIME)
+       * ===================================================================== */
+      function updateSimulation(dt) {
+        if (!state.running || state.paused || state.gameOver) return;
+
+        state.elapsed += dt;
+        state.threatLevel = 1 + Math.floor(state.elapsed / 22);
+
+        // Event Spawner
+        state.spawnCooldown -= dt;
+        if (state.spawnCooldown <= 0) {
+          spawnRandomEvent();
+          const baseInterval = Math.max(4.5, 11.5 - state.threatLevel * 0.85);
+          state.spawnCooldown = baseInterval + Math.random() * 2.5;
+        }
+
+        // Reboot countdown
+        if (state.rebootTimer > 0) {
+          state.rebootTimer = Math.max(0, state.rebootTimer - dt);
+        }
+
+        const spec = SPEC_CONFIG[state.spec];
+        const p = state.parts;
+        const dmgScale = 1 + (state.threatLevel - 1) * 0.12;
+
+        // 1. Malware Event
+        if (state.events.malware) {
+          const ev = state.events.malware;
+          ev.timer -= dt;
+          if (Math.random() < dt * 1.8) spawnMalwarePopup();
+          p.ram.usage = clamp(p.ram.usage + dt * 16, 28, 99);
+          damagePart("ssd", dt * 2.2 * dmgScale);
+          damagePart("cpu", dt * 1.4 * dmgScale);
+          if (ev.timer <= 0) {
+            damagePart("ssd", 18);
+            damagePart("mb", 12);
+            delete state.events.malware;
+            clearMalwarePopups();
+          }
+        } else {
+          p.ram.usage = clamp(p.ram.usage - dt * 10, 26, 99);
+        }
+
+        // 2. Ultra-Powerful Laser at CPU
+        if (state.events.laser) {
+          const ev = state.events.laser;
+          ev.timer -= dt;
+          const mitigation = state.reflectorActive ? spec.laserMitigation : 0;
+          const netFactor = 1 - mitigation;
+          p.cpu.temp = clamp(p.cpu.temp + dt * 14 * netFactor, 38, 115);
+          damagePart("cpu", dt * 5.8 * netFactor * dmgScale);
+          if (ev.timer <= 0) {
+            delete state.events.laser;
+            state.resolvedCount += 1;
+          }
+        }
+
+        // 3. Side Flamethrower & Barrier
+        if (state.events.flame) {
+          const ev = state.events.flame;
+          ev.timer -= dt;
+          if (state.barrierActive && state.barrierHp > 0) {
+            state.barrierHp = Math.max(0, state.barrierHp - dt * 15);
+            if (state.barrierHp <= 0) {
+              state.barrierActive = false;
+            }
+          } else {
+            damagePart("mb", dt * 3.8 * dmgScale);
+            damagePart("gpu", dt * 3.4 * dmgScale);
+            damagePart("psu", dt * 3.2 * dmgScale);
+            p.gpu.temp = clamp(p.gpu.temp + dt * 9, 40, 110);
+          }
+          if (ev.timer <= 0) {
+            delete state.events.flame;
+            state.resolvedCount += 1;
+          }
+        } else {
+          // Recharge barrier slowly when flame is inactive
+          state.barrierHp = Math.min(state.barrierMaxHp, state.barrierHp + dt * 8);
+        }
+
+        // 4. Light-Speed Accelerated Protons (Instant strike when timer hits 0)
+        if (state.events.proton) {
+          const ev = state.events.proton;
+          ev.timer -= dt;
+          if (ev.timer <= 0) {
+            // Trigger visual flash
+            el.fxProton.classList.remove("active");
+            void el.fxProton.offsetWidth;
+            el.fxProton.classList.add("active");
+
+            if (state.ramGuardActive) {
+              state.resolvedCount += 1;
+              sound.playSuccess();
+            } else {
+              damagePart("ram", 48);
+              damagePart("mb", 16);
+              sound.playDamage();
+            }
+            delete state.events.proton;
+          }
+        }
+
+        // 5. Water Cooling Failure (AIO Fail)
+        if (state.events.aio_fail) {
+          const ev = state.events.aio_fail;
+          ev.timer -= dt;
+          if (state.coolingMode === "casefan") {
+            // Stabilized by case fans
+            p.cpu.temp = clamp(p.cpu.temp - dt * 4 * spec.coolBonus, 44, 115);
+          } else {
+            p.cpu.temp = clamp(p.cpu.temp + dt * 13, 40, 115);
+            damagePart("cpu", dt * 4.5 * dmgScale);
+          }
+          if (ev.timer <= 0) {
+            delete state.events.aio_fail;
+            state.resolvedCount += 1;
+          }
+        } else if (!state.events.laser) {
+          // Normal CPU cooling recovery
+          const coolRate = state.shutdownMode ? 14 : (state.coolingMode === "aio" ? 9 : 6) * spec.coolBonus;
+          p.cpu.temp = clamp(p.cpu.temp - dt * coolRate, 38, 115);
+        }
+
+        // 6. Flooding / Submersion
+        if (state.events.flood) {
+          const ev = state.events.flood;
+          ev.timer -= dt;
+          if (state.pumpActive) {
+            state.floodLevel = clamp(state.floodLevel - dt * 18, 0, 100);
+          } else {
+            state.floodLevel = clamp(state.floodLevel + dt * 12, 0, 100);
+          }
+          if (ev.timer <= 0) {
+            delete state.events.flood;
+            state.resolvedCount += 1;
+          }
+        } else {
+          const drainRate = state.pumpActive ? 22 : 6;
+          state.floodLevel = clamp(state.floodLevel - dt * drainRate, 0, 100);
+        }
+
+        if (state.floodLevel > 25) {
+          const submergeFactor = (state.floodLevel - 25) / 75;
+          damagePart("psu", dt * 6.5 * submergeFactor * dmgScale);
+          if (state.floodLevel > 55) {
+            damagePart("mb", dt * 4.0 * submergeFactor * dmgScale);
+            damagePart("gpu", dt * 3.5 * submergeFactor * dmgScale);
+          }
+        }
+
+        // 7. CPU Degradation (C key mash)
+        if (state.events.cpu_degrade) {
+          const ev = state.events.cpu_degrade;
+          ev.timer -= dt;
+          ev.progress = Math.max(0, ev.progress - dt * 8);
+          damagePart("cpu", dt * 4.2 * dmgScale);
+          if (ev.timer <= 0) {
+            damagePart("cpu", 18);
+            delete state.events.cpu_degrade;
+          }
+        }
+
+        // 8. GPU Failure (Auto-recovers over timer; swap DP cable to Motherboard meanwhile)
+        if (state.events.gpu_fail) {
+          const ev = state.events.gpu_fail;
+          ev.timer -= dt;
+          ev.progress = ((ev.maxTimer - ev.timer) / ev.maxTimer) * 100;
+          if (state.dpPort === "gpu") {
+            // Stressing failed GPU output causes damage & system instability
+            damagePart("gpu", dt * 3.6 * dmgScale);
+            damagePart("mb", dt * 1.5 * dmgScale);
+          }
+          if (ev.timer <= 0) {
+            resolveEvent("gpu_fail");
+          }
+        } else {
+          p.gpu.temp = clamp(p.gpu.temp - dt * 7, 42, 110);
+        }
+
+        // 9. Robber (T key mash)
+        if (state.events.robber) {
+          const ev = state.events.robber;
+          ev.timer -= dt;
+          ev.progress = Math.max(0, ev.progress - dt * 7);
+          if (ev.timer <= 0) {
+            // Robber steals/rips components!
+            triggerGameOver("強盗にPC本体を持ち去られてしまった！");
+            return;
+          }
+        }
+
+        // 10. BIOS Error (OS Restart)
+        if (state.events.bios_error) {
+          const ev = state.events.bios_error;
+          ev.timer -= dt;
+          damagePart("mb", dt * 3.4 * dmgScale);
+          damagePart("cpu", dt * 2.2 * dmgScale);
+          if (ev.timer <= 0) {
+            damagePart("mb", 25);
+            delete state.events.bios_error;
+          }
+        }
+
+        // Wattage & Thermal Overheat Damage
+        let watts = state.shutdownMode ? 15 : 220;
+        if (state.events.malware) watts += 140;
+        if (state.events.laser) watts += 90;
+        if (state.ramGuardActive) watts += 35;
+        if (state.barrierActive) watts += 65;
+        if (state.pumpActive) watts += 45;
+        p.psu.watts = watts;
+
+        if (p.cpu.temp >= 95) {
+          damagePart("cpu", dt * 3.0);
+        }
+
+        // Check Game Over Conditions
+        const overall = getOverallHp();
+        if (overall <= 0) {
+          triggerGameOver("PC全体の耐久値が0になり、システムが完全に損壊した！");
+          return;
+        }
+        for (const [k, part] of Object.entries(p)) {
+          if (part.hp <= 0) {
+            const names = { cpu: "CPU", gpu: "GPU", ram: "RAM", mb: "マザーボード", psu: "電源ユニット", ssd: "SSD" };
+            triggerGameOver(`${names[k]}が完全に破損し、PCが起動不能になった！`);
+            return;
+          }
+        }
+      }
+
+      function triggerGameOver(reason) {
+        state.gameOver = true;
+        state.running = false;
+        sound.playDamage();
+        el.gameoverReason.textContent = reason;
+        el.finalTime.textContent = formatTime(state.elapsed);
+        el.finalResolved.textContent = state.resolvedCount;
+        el.gameoverScreen.classList.remove("hidden");
+      }
+
+      /* =====================================================================
+       * 9. UI & VISUAL RENDERING
+       * ===================================================================== */
+      let lastSpecialMode = null;
+
+      function setBarColor(barEl, pct) {
+        barEl.style.width = `${pct}%`;
+        if (pct > 55) barEl.style.background = "linear-gradient(90deg, #22c55e, #4ade80)";
+        else if (pct > 25) barEl.style.background = "linear-gradient(90deg, #eab308, #facc15)";
+        else barEl.style.background = "linear-gradient(90deg, #dc2626, #f87171)";
+      }
+
+      function renderUI() {
+        const p = state.parts;
+        const overall = getOverallHp();
+
+        el.hudTime.textContent = formatTime(state.elapsed);
+        el.hudLevel.textContent = state.threatLevel;
+        el.hudResolved.textContent = state.resolvedCount;
+        el.overallHpText.textContent = `${overall}%`;
+        setBarColor(el.overallHpBar, overall);
+
+        // Parts Telemetry
+        el.statCpu.textContent = `${Math.round(p.cpu.temp)}°C | HP ${Math.ceil(p.cpu.hp)}`;
+        el.statGpu.textContent = `${p.gpu.failed ? "STOP" : Math.round(p.gpu.temp) + "°C"} | HP ${Math.ceil(p.gpu.hp)}`;
+        el.statRam.textContent = `${Math.round(p.ram.usage)}% | HP ${Math.ceil(p.ram.hp)}`;
+        el.statMb.textContent  = `${state.events.bios_error ? "BIOS ERR" : "正常"} | HP ${Math.ceil(p.mb.hp)}`;
+        el.statPsu.textContent = `${Math.round(p.psu.watts)}W | HP ${Math.ceil(p.psu.hp)}`;
+        el.statSsd.textContent = `${state.events.malware ? "感染中" : "良好"} | HP ${Math.ceil(p.ssd.hp)}`;
+
+        setBarColor(el.barCpu, p.cpu.hp);
+        setBarColor(el.barGpu, p.gpu.hp);
+        setBarColor(el.barRam, p.ram.hp);
+        setBarColor(el.barMb, p.mb.hp);
+        setBarColor(el.barPsu, p.psu.hp);
+        setBarColor(el.barSsd, p.ssd.hp);
+
+        // PC Case Interior Visuals
+        el.visCpuTemp.textContent = `${Math.round(p.cpu.temp)}°C`;
+        el.visCpu.classList.toggle("overheat", p.cpu.temp >= 85 || Boolean(state.events.cpu_degrade));
+        el.visRamPct.textContent = `${Math.round(p.ram.usage)}%`;
+        el.visRam.classList.toggle("shielded", state.ramGuardActive);
+        el.visGpuTemp.textContent = p.gpu.failed ? "FAIL" : `${Math.round(p.gpu.temp)}°C`;
+        el.visGpu.classList.toggle("failed", p.gpu.failed);
+        el.visWatt.textContent = `${Math.round(p.psu.watts)}W`;
+
+        // Fans spinning
+        const fansActive = !state.shutdownMode && (state.coolingMode === "casefan" || !state.events.aio_fail);
+        el.fans.forEach(f => f.classList.toggle("spinning", fansActive));
+
+        // Power LED
+        el.pcPowerLed.style.background = state.shutdownMode ? "#64748b" : (state.events.aio_fail ? "#ef4444" : "#22c55e");
+
+        // DisplayPort Cable Position
+        el.dpCableVisual.classList.toggle("mb-mode", state.dpPort === "mb");
+        el.dpCableVisual.textContent = state.dpPort === "mb" ? "DP:MB" : "DP:GPU";
+
+        // Disaster FX on Stage
+        const laserOn = Boolean(state.events.laser);
+        el.fxLaser.classList.toggle("active", laserOn);
+        el.fxLaser.classList.toggle("reflected", laserOn && state.reflectorActive);
+        el.fxLaserBounce.classList.toggle("active", laserOn && state.reflectorActive);
+        el.propReflector.classList.toggle("active", state.reflectorActive);
+
+        el.fxFlame.classList.toggle("active", Boolean(state.events.flame));
+        el.propBarrier.classList.toggle("active", state.barrierActive);
+        el.propBarrier.style.opacity = Math.max(0.25, state.barrierHp / state.barrierMaxHp);
+
+        el.fxFlood.style.height = `${state.floodLevel * 0.45}%`;
+        el.propPumpHose.classList.toggle("active", state.pumpActive);
+
+        if (state.events.robber) {
+          el.fxRobber.classList.add("active");
+          const ev = state.events.robber;
+          const approachRatio = 1 - ev.timer / ev.maxTimer;
+          const pushBack = (ev.progress / 100) * 18;
+          const leftPos = clamp(4 + approachRatio * 48 - pushBack, 2, 54);
+          el.fxRobber.style.left = `${leftPos}%`;
+        } else {
+          el.fxRobber.classList.remove("active");
+        }
+
+        // Monitor Special States (No Signal / BIOS Error / Rebooting / Shutdown)
+        let specialMode = null;
+        if (state.shutdownMode) {
+          specialMode = "shutdown";
+        } else if (state.rebootTimer > 0) {
+          specialMode = "rebooting";
+        } else if (state.dpPort === "gpu" && p.gpu.failed) {
+          specialMode = "no_signal_gpu";
+        } else if (state.events.bios_error) {
+          specialMode = "bios_error";
+        }
+
+        if (specialMode !== lastSpecialMode) {
+          lastSpecialMode = specialMode;
+          el.monitorSpecial.className = "";
+          el.monitorSpecial.innerHTML = "";
+
+          if (specialMode === "shutdown") {
+            el.monitorSpecial.classList.add("no-signal");
+            el.monitorSpecial.innerHTML = `<div style="font-size:9px;font-weight:800;">POWER OFF</div><button class="os-action-btn" id="mon-boot-btn">⏻ 電源ON</button>`;
+            const bootBtn = document.getElementById("mon-boot-btn");
+            if (bootBtn) {
+              bootBtn.onclick = (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                state.shutdownMode = false;
+                sound.playClick();
+                renderUI();
+              };
+            }
+          } else if (specialMode === "rebooting") {
+            el.monitorSpecial.classList.add("rebooting");
+            el.monitorSpecial.innerHTML = `<div style="font-size:10px;font-weight:800;" id="mon-reboot-text">🔄 再起動中... (${state.rebootTimer.toFixed(1)}s)</div>`;
+          } else if (specialMode === "no_signal_gpu") {
+            el.monitorSpecial.classList.add("no-signal");
+            el.monitorSpecial.innerHTML = `<div style="font-size:10px;font-weight:800;color:#f87171;">NO SIGNAL (GPU停止)</div><div style="font-size:7px;">DPケーブルをマザーボード側へ差し替えてください</div>`;
+          } else if (specialMode === "bios_error") {
+            el.monitorSpecial.classList.add("bios-error");
+            el.monitorSpecial.innerHTML = `
+              <div style="font-size:9px;font-weight:900;">:( BIOS CRITICAL ERROR</div>
+              <div style="font-size:7px;margin:3px 0;">ROM CHECKSUM CORRUPTED</div>
+              <button class="os-action-btn danger" id="bios-quick-reboot">🔄 再起動して修復</button>
+            `;
+            const qBtn = document.getElementById("bios-quick-reboot");
+            if (qBtn) {
+              qBtn.onclick = (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                triggerOsReboot();
+                renderUI();
+              };
+            }
+          }
+        }
+
+        if (specialMode === "rebooting") {
+          const rebootText = document.getElementById("mon-reboot-text");
+          if (rebootText) {
+            rebootText.textContent = `🔄 再起動中... (${state.rebootTimer.toFixed(1)}s)`;
+          }
+        }
+
+        // Action Buttons State
+        el.btnReflector.classList.toggle("engaged", state.reflectorActive);
+        el.btnReflector.classList.toggle("warn-pulse", Boolean(state.events.laser) && !state.reflectorActive);
+        el.stateReflector.textContent = state.reflectorActive ? "ON" : "OFF";
+
+        el.btnBarrier.classList.toggle("engaged", state.barrierActive);
+        el.btnBarrier.classList.toggle("warn-pulse", Boolean(state.events.flame) && !state.barrierActive);
+        el.stateBarrier.textContent = `${state.barrierActive ? "ON" : "OFF"} (${Math.ceil(state.barrierHp)})`;
+
+        el.btnRamGuard.classList.toggle("engaged", state.ramGuardActive);
+        el.btnRamGuard.classList.toggle("warn-pulse", Boolean(state.events.proton) && !state.ramGuardActive);
+        el.stateRamGuard.textContent = state.ramGuardActive ? "ON" : "OFF";
+
+        el.btnCaseFan.classList.toggle("engaged", state.coolingMode === "casefan");
+        el.btnCaseFan.classList.toggle("warn-pulse", Boolean(state.events.aio_fail) && state.coolingMode !== "casefan");
+        el.stateCooling.textContent = state.coolingMode === "casefan" ? "ケースファン" : "水冷稼働";
+
+        el.btnPump.classList.toggle("engaged", state.pumpActive);
+        el.btnPump.classList.toggle("warn-pulse", Boolean(state.events.flood) && !state.pumpActive);
+        el.statePump.textContent = state.pumpActive ? "稼働中" : "OFF";
+
+        el.btnDpCable.classList.toggle("engaged", state.dpPort === "mb");
+        el.btnDpCable.classList.toggle("warn-pulse", Boolean(state.events.gpu_fail) && state.dpPort === "gpu");
+        el.stateDp.textContent = state.dpPort === "mb" ? "マザーボード側" : "GPU側";
+
+        // Render Active Alerts Ticker
+        renderAlerts();
+      }
+
+      function renderAlerts() {
+        const events = Object.values(state.events);
+        if (events.length === 0) {
+          el.alertTicker.innerHTML = "";
+          return;
+        }
+
+        el.alertTicker.innerHTML = events.map(ev => {
+          const mashHtml = ev.mashKey
+            ? `<button class="mash-btn" data-mash="${ev.mashKey}">[${ev.mashKey}] 連打 (${Math.min(100, Math.round(ev.progress))}%)</button>`
+            : "";
+          const progressHtml = ev.id === "gpu_fail"
+            ? ` (自動復旧 ${Math.min(100, Math.round(ev.progress))}%)`
+            : "";
+
+          return `
+            <div class="alert-card">
+              <div>
+                <div class="alert-title">${ev.name}${progressHtml}</div>
+                <div class="alert-hint">${ev.hint}</div>
+              </div>
+              <div style="display:flex;align-items:center;gap:8px;">
+                ${mashHtml}
+                <div class="alert-timer">⏳ ${ev.timer.toFixed(1)}s</div>
+              </div>
+            </div>
+          `;
+        }).join("");
+
+        el.alertTicker.querySelectorAll(".mash-btn").forEach(btn => {
+          btn.onclick = () => handleMashAction(btn.dataset.mash);
+        });
+      }
+
+      /* =====================================================================
+       * 10. EVENT LISTENERS & GAME LOOP
+       * ===================================================================== */
+      function resetAndStartGame() {
+        sound.init();
+        sound.playSuccess();
+
+        state.running = true;
+        state.paused = false;
+        state.gameOver = false;
+        state.elapsed = 0;
+        state.threatLevel = 1;
+        state.resolvedCount = 0;
+        state.spawnCooldown = 2.0;
+
+        state.zoomedMonitor = false;
+        state.activeApp = null;
+        state.rebootTimer = 0;
+        state.shutdownMode = false;
+        lastSpecialMode = null;
+        clearMalwarePopups();
+
+        state.reflectorActive = false;
+        state.barrierActive = false;
+        state.barrierHp = 100;
+        state.ramGuardActive = false;
+        state.coolingMode = "aio";
+        state.pumpActive = false;
+        state.dpPort = "gpu";
+        state.floodLevel = 0;
+
+        state.parts = {
+          cpu: { hp: 100, maxHp: 100, temp: 42 },
+          gpu: { hp: 100, maxHp: 100, temp: 45, failed: false },
+          ram: { hp: 100, maxHp: 100, usage: 28 },
+          mb:  { hp: 100, maxHp: 100 },
+          psu: { hp: 100, maxHp: 100, watts: 240 },
+          ssd: { hp: 100, maxHp: 100 }
+        };
+
+        state.events = {};
+
+        el.cameraRig.classList.remove("zoomed-monitor");
+        el.exitZoomBtn.classList.remove("visible");
+        el.osWindow.classList.remove("open");
+        el.pauseBtn.textContent = "⏸️ 一時停止 (Space)";
+        el.startScreen.classList.add("hidden");
+        el.gameoverScreen.classList.add("hidden");
+
+        renderUI();
+      }
+
+      // Spec Card Selection
+      document.querySelectorAll(".spec-card").forEach(card => {
+        card.addEventListener("click", () => {
+          document.querySelectorAll(".spec-card").forEach(c => c.classList.remove("selected"));
+          card.classList.add("selected");
+          state.spec = card.dataset.spec;
+          sound.playClick();
+        });
+      });
+
+      document.getElementById("start-btn").addEventListener("click", resetAndStartGame);
+      document.getElementById("restart-game-btn").addEventListener("click", resetAndStartGame);
+
+      // Pause & Sound Controls
+      el.pauseBtn.addEventListener("click", () => {
+        if (!state.running || state.gameOver) return;
+        state.paused = !state.paused;
+        el.pauseBtn.textContent = state.paused ? "▶️ 再開 (Space)" : "⏸️ 一時停止 (Space)";
+        sound.playClick();
+      });
+
+      el.soundBtn.addEventListener("click", () => {
+        sound.enabled = !sound.enabled;
+        el.soundBtn.classList.toggle("active", sound.enabled);
+        el.soundBtn.textContent = sound.enabled ? "🔊 警告音: ON" : "🔇 警告音: OFF";
+        if (sound.enabled) sound.playClick();
+      });
+
+      // Monitor Zoom In / Out
+      el.monitorAssembly.addEventListener("click", (e) => {
+        e.stopPropagation();
+        if (!state.zoomedMonitor) {
+          setMonitorZoom(true);
+        }
+      });
+
+      el.btnMonitorZoom.addEventListener("click", () => {
+        setMonitorZoom(!state.zoomedMonitor);
+      });
+
+      el.exitZoomBtn.addEventListener("click", () => {
+        setMonitorZoom(false);
+      });
+
+      el.stageViewport.addEventListener("click", (e) => {
+        if (state.zoomedMonitor && !el.monitorAssembly.contains(e.target)) {
+          setMonitorZoom(false);
+        }
+      });
+
+      // OS Desktop Icons & Window Close
+      document.querySelectorAll(".os-icon").forEach(icon => {
+        icon.addEventListener("click", (e) => {
+          e.stopPropagation();
+          if (!state.zoomedMonitor) {
+            setMonitorZoom(true);
+          }
+          openOsApp(icon.dataset.app);
+        });
+      });
+
+      el.osWinClose.addEventListener("click", (e) => {
+        e.stopPropagation();
+        closeOsApp();
+      });
+
+      // Physical Countermeasure Buttons
+      el.btnReflector.addEventListener("click", () => {
+        state.reflectorActive = !state.reflectorActive;
+        sound.playClick();
+        renderUI();
+      });
+
+      el.btnBarrier.addEventListener("click", () => {
+        if (!state.barrierActive && state.barrierHp < 15) return;
+        state.barrierActive = !state.barrierActive;
+        sound.playClick();
+        renderUI();
+      });
+
+      el.btnRamGuard.addEventListener("click", () => {
+        state.ramGuardActive = !state.ramGuardActive;
+        sound.playClick();
+        renderUI();
+      });
+
+      el.btnCaseFan.addEventListener("click", () => {
+        state.coolingMode = state.coolingMode === "aio" ? "casefan" : "aio";
+        sound.playClick();
+        renderUI();
+      });
+
+      el.btnPump.addEventListener("click", () => {
+        state.pumpActive = !state.pumpActive;
+        sound.playClick();
+        renderUI();
+      });
+
+      el.btnDpCable.addEventListener("click", () => {
+        state.dpPort = state.dpPort === "gpu" ? "mb" : "gpu";
+        sound.playClick();
+        renderUI();
+      });
+
+      // Keyboard Controls (ESC, Space, C, T)
+      window.addEventListener("keydown", (e) => {
+        if (e.key === "Escape") {
+          if (state.zoomedMonitor) setMonitorZoom(false);
+        } else if (e.code === "Space") {
+          if (state.running && !state.gameOver) {
+            e.preventDefault();
+            state.paused = !state.paused;
+            el.pauseBtn.textContent = state.paused ? "▶️ 再開 (Space)" : "⏸️ 一時停止 (Space)";
+          }
+        } else if (e.key === "c" || e.key === "C") {
+          handleMashAction("C");
+        } else if (e.key === "t" || e.key === "T") {
+          handleMashAction("T");
+        }
+      });
+
+      // Main Animation Loop
+      let lastTimestamp = performance.now();
+      function gameLoop(now) {
+        const dt = Math.min(0.1, (now - lastTimestamp) / 1000);
+        lastTimestamp = now;
+
+        updateSimulation(dt);
+        if (state.running) {
+          renderUI();
+        }
+        requestAnimationFrame(gameLoop);
+      }
+
+      window.onload = () => {
+        requestAnimationFrame(gameLoop);
+      };
+    })();
+  </script>
+</body>
+</html>
